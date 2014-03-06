@@ -8,6 +8,7 @@ import sys
 import logging
 import argparse
 import logging.handlers
+import hashlib
 import gnupg
 
 # Default homedir
@@ -87,6 +88,30 @@ def update_sigs (gpg, kernel, initrd, homedir) :
         Logger.error("Error creating signatures in " + homedir)
         return False
     return True
+
+# Creates a checksum using a crypto safe hashing algo
+# For use when non gpg kernel verification is needed
+# @param kernel Path to the kernel
+# @param initrd Path to the iniramdisk
+# @returns A tuple containing both checksum
+def non_gpg(kernel, initrd, homedir) :
+    alg = 'sha256'
+    if alg not in hashlib.algorithms_available :
+        raise ValueError("Unable to find sha256")
+    h = hashlib.new(alg)
+
+    khash = make_hash(h, kernel)
+    ihash = make_hash(h, initrd)
+
+    return (khash, ihash)
+
+# Create a bytes-like checksum for a given path
+def make_hash(h, fname) :
+    fd = open(fname, "rb")
+    for line in fd: 
+        h.update(line)
+    fd.close()
+    return m.digest()
 
 # Checks the kernel and ramdisk against GnuPG signature
 # @param gpg The GnuPG instance to use
