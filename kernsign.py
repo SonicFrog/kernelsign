@@ -157,8 +157,17 @@ def check_sigs(gpg, kernel, initrd, homedir):
 # @param size The bit size of the new key
 # @returns The created key object
 def gen_key(gpg, algo, size):
-    keyparm = gpg.gen_key_input(key_type=algo, key_length=size,
-                                name_comment="Kernsig private key")
+    if size % 2 != 0:
+        return None
+    key_input = {
+        'name_real': 'Kernelsig',
+        'name_email': 'kernelsig@localhost',
+        'key_type': algo,
+        'key_length': size,
+        'testing': True,
+        'key_usage': 'encrypt,sign,auth'}
+
+    keyparm = gpg.gen_key_input(**key_input)
     key = gpg.gen_key(keyparm)
     return key
 
@@ -206,7 +215,7 @@ if __name__ == '__main__':
     Logger.info("Starting " + sys.argv[0] + "...")
 
     try:
-        gpg = gnupg.GPG(gnupghome=arguments.homedir)
+        gpg = gnupg.GPG(homedir=arguments.homedir)
     except ValueError as err:
         Logger.critical("Could not locate the gnupg binary. " +
                         "Please make sure you have GnuPG installed")
